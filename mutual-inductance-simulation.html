@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Induktansi Bersama — Fisika Interaktif</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:    #0A0E1A;
+    --navy2:   #111827;
+    --navy3:   #1C2537;
+    --blue:    #3B82F6;
+    --cyan:    #06B6D4;
+    --amber:   #F59E0B;
+    --green:   #10B981;
+    --red:     #EF4444;
+    --white:   #F0F4FF;
+    --muted:   #6B7280;
+    --border:  #1E293B;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -1px;
+  }
+
+  h1 span { color: var(--cyan); }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 400;
+    max-width: 560px;
+  }
+
+  /* ── FORMULA STRIP ── */
+  .formula-strip {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+
+  .formula-card {
+    background: var(--navy3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .formula-card .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .formula-card .eq {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    color: var(--amber);
+  }
+
+  .formula-card .eq sub { font-size: 11px; }
+
+  /* ── LAYOUT ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 860px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .panel-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    margin-bottom: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    flex-shrink: 0;
+  }
+
+  /* ── SLIDERS ── */
+  .param-group { margin-bottom: 22px; }
+
+  .param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  .param-name {
+    font-size: 13px;
+    color: var(--white);
+    font-weight: 500;
+  }
+
+  .param-symbol {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--navy3);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .param-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--blue);
+    min-width: 90px;
+    text-align: right;
+  }
+
+  .param-unit {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 12px rgba(59,130,246,0.6);
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 20px rgba(59,130,246,0.9);
+  }
+
+  input[type=range].cyan::-webkit-slider-thumb { background: var(--cyan); box-shadow: 0 0 12px rgba(6,182,212,0.6); }
+  input[type=range].amber::-webkit-slider-thumb { background: var(--amber); box-shadow: 0 0 12px rgba(245,158,11,0.6); }
+  input[type=range].green::-webkit-slider-thumb { background: var(--green); box-shadow: 0 0 12px rgba(16,185,129,0.6); }
+
+  .range-bounds {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* ── RESULTS BOX ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .result-cell {
+    background: var(--navy3);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-cell::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .result-cell.blue::after   { background: var(--blue); }
+  .result-cell.cyan::after   { background: var(--cyan); }
+  .result-cell.amber::after  { background: var(--amber); }
+  .result-cell.green::after  { background: var(--green); }
+  .result-cell.red::after    { background: var(--red); }
+
+  .result-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .result-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .result-val.blue   { color: var(--blue); }
+  .result-val.cyan   { color: var(--cyan); }
+  .result-val.amber  { color: var(--amber); }
+  .result-val.green  { color: var(--green); }
+  .result-val.red    { color: var(--red); }
+
+  .result-subtext {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── CANVAS AREA ── */
+  .canvas-panel {
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  canvas {
+    width: 100%;
+    border-radius: 8px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  /* ── WAVEFORM TABS ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .tab-btn.active, .tab-btn:hover {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+  }
+
+  /* ── INFO SECTION ── */
+  .info-section {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .info-card {
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .info-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cyan);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .info-card p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #9CA3AF;
+  }
+
+  .info-card .highlight {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--amber);
+    font-size: 12px;
+  }
+
+  /* ── COUPLING INDICATOR ── */
+  .coupling-bar-wrap {
+    margin-top: 12px;
+  }
+
+  .coupling-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .coupling-bar-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .coupling-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px var(--cyan);
+  }
+
+  /* ── PLAY/PAUSE ── */
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 8px 18px;
+    border-radius: 7px;
+    border: 1px solid var(--blue);
+    background: transparent;
+    color: var(--blue);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn:hover, .btn.active {
+    background: var(--blue);
+    color: white;
+  }
+
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: var(--red); color: white; }
+
+  .speed-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── ENERGY METER ── */
+  .energy-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+
+  .e-bar-row { display: flex; align-items: center; gap: 10px; }
+
+  .e-bar-name {
+    font-size: 11px;
+    color: var(--muted);
+    width: 70px;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .e-bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .e-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.2s ease;
+  }
+
+  .e-bar-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <p class="eyebrow">Modul Fisika Interaktif</p>
+    <h1>Induktansi <span>Bersama</span></h1>
+    <p class="subtitle">Simulasi real-time kopling medan magnet antara dua kumparan. Atur parameter dan amati respons tegangan, arus, serta energi yang tersimpan.</p>
+  </header>
+
+  <!-- FORMULA STRIP -->
+  <div class="formula-strip">
+    <div class="formula-card">
+      <div class="label">GGL Induksi Bersama</div>
+      <div class="eq">ε₂ = −M · (dI₁/dt)</div>
+    </div>
+    <div class="formula-card">
+      <div class="label">Koefisien Kopling</div>
+      <div class="eq">k = M / √(L₁·L₂)</div>
+    </div>
+    <div class="formula-card">
+      <div class="label">Energi Tersimpan</div>
+      <div class="eq">W = ½L₁I₁² + ½L₂I₂² + MI₁I₂</div>
+    </div>
+    <div class="formula-card">
+      <div class="label">Batas Induktansi Bersama</div>
+      <div class="eq">M ≤ √(L₁·L₂)</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: CONTROLS -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Parameter Kumparan</div>
+
+        <!-- L1 -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Induktansi L₁</div>
+              <div class="param-symbol">Kumparan Primer</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value" id="val-L1">100</div>
+              <div style="font-size:11px;color:var(--muted)">mH</div>
+            </div>
+          </div>
+          <input type="range" id="sl-L1" min="10" max="500" value="100" step="5">
+          <div class="range-bounds"><span>10 mH</span><span>500 mH</span></div>
+        </div>
+
+        <!-- L2 -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Induktansi L₂</div>
+              <div class="param-symbol">Kumparan Sekunder</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value cyan" id="val-L2">80</div>
+              <div style="font-size:11px;color:var(--muted)">mH</div>
+            </div>
+          </div>
+          <input type="range" class="cyan" id="sl-L2" min="10" max="500" value="80" step="5">
+          <div class="range-bounds"><span>10 mH</span><span>500 mH</span></div>
+        </div>
+
+        <!-- M -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Induktansi Bersama M</div>
+              <div class="param-symbol">M ≤ √(L₁·L₂)</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value amber" id="val-M">60</div>
+              <div style="font-size:11px;color:var(--muted)">mH</div>
+            </div>
+          </div>
+          <input type="range" class="amber" id="sl-M" min="0" max="200" value="60" step="1">
+          <div class="range-bounds"><span>0 mH</span><span id="M-max-label">200 mH</span></div>
+        </div>
+
+        <!-- Coupling k display -->
+        <div class="coupling-bar-wrap">
+          <div class="coupling-label">
+            <span>Koefisien Kopling (k)</span>
+            <span id="val-k" style="font-family:'JetBrains Mono',monospace;color:var(--cyan)">0.67</span>
+          </div>
+          <div class="coupling-bar-track">
+            <div class="coupling-bar-fill" id="k-bar" style="width:67%"></div>
+          </div>
+          <div class="range-bounds"><span>Lemah (0)</span><span>Sempurna (1)</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- R1 -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Resistansi R₁</div>
+              <div class="param-symbol">Sisi Primer</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value" id="val-R1">10</div>
+              <div style="font-size:11px;color:var(--muted)">Ω</div>
+            </div>
+          </div>
+          <input type="range" id="sl-R1" min="1" max="200" value="10" step="1">
+          <div class="range-bounds"><span>1 Ω</span><span>200 Ω</span></div>
+        </div>
+
+        <!-- R2 -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Resistansi R₂</div>
+              <div class="param-symbol">Sisi Sekunder</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value cyan" id="val-R2">20</div>
+              <div style="font-size:11px;color:var(--muted)">Ω</div>
+            </div>
+          </div>
+          <input type="range" class="cyan" id="sl-R2" min="1" max="200" value="20" step="1">
+          <div class="range-bounds"><span>1 Ω</span><span>200 Ω</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- V source -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Tegangan Sumber V₀</div>
+              <div class="param-symbol">Sinusoidal AC</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value green" id="val-V0">10</div>
+              <div style="font-size:11px;color:var(--muted)">V</div>
+            </div>
+          </div>
+          <input type="range" class="green" id="sl-V0" min="1" max="50" value="10" step="0.5">
+          <div class="range-bounds"><span>1 V</span><span>50 V</span></div>
+        </div>
+
+        <!-- Frequency -->
+        <div class="param-group">
+          <div class="param-header">
+            <div>
+              <div class="param-name">Frekuensi f</div>
+              <div class="param-symbol">Sumber AC</div>
+            </div>
+            <div style="text-align:right">
+              <div class="param-value amber" id="val-freq">50</div>
+              <div style="font-size:11px;color:var(--muted)">Hz</div>
+            </div>
+          </div>
+          <input type="range" class="amber" id="sl-freq" min="10" max="1000" value="50" step="10">
+          <div class="range-bounds"><span>10 Hz</span><span>1 kHz</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Hasil Hitung -->
+        <div class="panel-title" style="margin-bottom:12px">Hasil Perhitungan</div>
+        <div class="results-grid">
+          <div class="result-cell blue">
+            <div class="result-label">GGL Bersama ε₂</div>
+            <div class="result-val blue" id="res-emf">—</div>
+            <div class="result-subtext">V (puncak)</div>
+          </div>
+          <div class="result-cell cyan">
+            <div class="result-label">Impedansi Z₁</div>
+            <div class="result-val cyan" id="res-Z1">—</div>
+            <div class="result-subtext">Ω</div>
+          </div>
+          <div class="result-cell amber">
+            <div class="result-label">Arus I₁ (puncak)</div>
+            <div class="result-val amber" id="res-I1">—</div>
+            <div class="result-subtext">A</div>
+          </div>
+          <div class="result-cell green">
+            <div class="result-label">Arus I₂ (puncak)</div>
+            <div class="result-val green" id="res-I2">—</div>
+            <div class="result-subtext">A</div>
+          </div>
+          <div class="result-cell red">
+            <div class="result-label">Energi Total</div>
+            <div class="result-val red" id="res-W">—</div>
+            <div class="result-subtext">mJ</div>
+          </div>
+          <div class="result-cell cyan">
+            <div class="result-label">Reaktansi ω·M</div>
+            <div class="result-val cyan" id="res-wM">—</div>
+            <div class="result-subtext">Ω</div>
+          </div>
+        </div>
+
+        <!-- Energy bars -->
+        <div style="margin-top:16px">
+          <div class="panel-title" style="margin-bottom:10px;font-size:11px">Distribusi Energi</div>
+          <div class="energy-bars">
+            <div class="e-bar-row">
+              <div class="e-bar-name">W(L₁)</div>
+              <div class="e-bar-track"><div class="e-bar-fill" id="eb-L1" style="background:var(--blue);width:0%"></div></div>
+              <div class="e-bar-val blue" id="ev-L1" style="color:var(--blue)">0 mJ</div>
+            </div>
+            <div class="e-bar-row">
+              <div class="e-bar-name">W(L₂)</div>
+              <div class="e-bar-track"><div class="e-bar-fill" id="eb-L2" style="background:var(--cyan);width:0%"></div></div>
+              <div class="e-bar-val" id="ev-L2" style="color:var(--cyan)">0 mJ</div>
+            </div>
+            <div class="e-bar-row">
+              <div class="e-bar-name">W(M)</div>
+              <div class="e-bar-track"><div class="e-bar-fill" id="eb-M" style="background:var(--amber);width:0%"></div></div>
+              <div class="e-bar-val" id="ev-M" style="color:var(--amber)">0 mJ</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: CANVAS -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Circuit diagram -->
+      <div class="canvas-panel">
+        <div class="panel-title">Diagram Rangkaian</div>
+        <canvas id="circuit-canvas" height="200"></canvas>
+      </div>
+
+      <!-- Waveform -->
+      <div class="canvas-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div class="panel-title" style="margin-bottom:0">Grafik Gelombang</div>
+          <div class="tabs">
+            <button class="tab-btn active" onclick="setTab('voltage')">Tegangan</button>
+            <button class="tab-btn" onclick="setTab('current')">Arus</button>
+            <button class="tab-btn" onclick="setTab('flux')">Fluks</button>
+          </div>
+        </div>
+        <canvas id="wave-canvas" height="180"></canvas>
+        <div class="controls-row">
+          <button class="btn active" id="play-btn" onclick="togglePlay()">⏸ PAUSE</button>
+          <button class="btn" onclick="resetSim()">↺ RESET</button>
+          <span class="speed-label">Kecepatan:</span>
+          <button class="btn" id="spd1" onclick="setSpeed(1)">1×</button>
+          <button class="btn active" id="spd2" onclick="setSpeed(2)">2×</button>
+          <button class="btn" id="spd5" onclick="setSpeed(5)">5×</button>
+        </div>
+      </div>
+
+      <!-- Phasor -->
+      <div class="canvas-panel">
+        <div class="panel-title">Diagram Fasor</div>
+        <canvas id="phasor-canvas" height="220"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INFO SECTION -->
+  <div class="info-section">
+    <div class="info-card">
+      <h3>Apa itu Induktansi Bersama?</h3>
+      <p>Induktansi bersama (M) adalah kemampuan suatu kumparan untuk menginduksi tegangan pada kumparan lain melalui kopling medan magnet. Satuannya adalah <span class="highlight">Henry (H)</span>.</p>
+    </div>
+    <div class="info-card">
+      <h3>Koefisien Kopling k</h3>
+      <p>Nilai k = 0 berarti tidak ada kopling (kumparan terpisah jauh), k = 1 berarti kopling sempurna (semua fluks dari L₁ melewati L₂). Secara matematis: <span class="highlight">k = M/√(L₁·L₂)</span></p>
+    </div>
+    <div class="info-card">
+      <h3>Aplikasi Nyata</h3>
+      <p>Induktansi bersama adalah dasar kerja <span class="highlight">transformator, pengisi nirkabel (wireless charging), sensor induktif</span>, dan sistem transmisi daya resonan seperti pada kendaraan listrik.</p>
+    </div>
+    <div class="info-card">
+      <h3>Arah GGL</h3>
+      <p>Tanda negatif pada ε₂ = −M(dI₁/dt) mencerminkan <span class="highlight">Hukum Lenz</span>: GGL yang terinduksi selalu melawan perubahan fluks yang menyebabkannya, sesuai hukum kekekalan energi.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────
+let params = {
+  L1: 100e-3, L2: 80e-3, M: 60e-3,
+  R1: 10, R2: 20,
+  V0: 10, freq: 50
+};
+
+let simTime = 0;
+let playing = true;
+let speed = 2;
+let currentTab = 'voltage';
+let animFrame;
+
+// waveform history
+const HIST = 400;
+let waveData = { t: [], v1: [], v2: [], i1: [], i2: [], phi1: [], phi2: [] };
+
+// ─────────────────────────────────────────
+//  DOM REFERENCES
+// ─────────────────────────────────────────
+const sliders = {
+  L1: document.getElementById('sl-L1'),
+  L2: document.getElementById('sl-L2'),
+  M:  document.getElementById('sl-M'),
+  R1: document.getElementById('sl-R1'),
+  R2: document.getElementById('sl-R2'),
+  V0: document.getElementById('sl-V0'),
+  freq: document.getElementById('sl-freq')
+};
+
+const vals = {
+  L1: document.getElementById('val-L1'),
+  L2: document.getElementById('val-L2'),
+  M:  document.getElementById('val-M'),
+  R1: document.getElementById('val-R1'),
+  R2: document.getElementById('val-R2'),
+  V0: document.getElementById('val-V0'),
+  freq: document.getElementById('val-freq')
+};
+
+// ─────────────────────────────────────────
+//  SLIDER LISTENERS
+// ─────────────────────────────────────────
+function clampM() {
+  const Mmax = Math.sqrt(params.L1 * params.L2) * 1000; // in mH
+  sliders.M.max = Math.floor(Mmax);
+  document.getElementById('M-max-label').textContent = Math.floor(Mmax) + ' mH';
+  if (parseFloat(sliders.M.value) > Math.floor(Mmax)) {
+    sliders.M.value = Math.floor(Mmax);
+    params.M = Math.floor(Mmax) * 1e-3;
+    vals.M.textContent = Math.floor(Mmax);
+  }
+}
+
+sliders.L1.addEventListener('input', () => {
+  params.L1 = parseFloat(sliders.L1.value) * 1e-3;
+  vals.L1.textContent = sliders.L1.value;
+  clampM();
+  updateResults();
+});
+sliders.L2.addEventListener('input', () => {
+  params.L2 = parseFloat(sliders.L2.value) * 1e-3;
+  vals.L2.textContent = sliders.L2.value;
+  clampM();
+  updateResults();
+});
+sliders.M.addEventListener('input', () => {
+  params.M = parseFloat(sliders.M.value) * 1e-3;
+  vals.M.textContent = sliders.M.value;
+  updateResults();
+});
+sliders.R1.addEventListener('input', () => { params.R1 = parseFloat(sliders.R1.value); vals.R1.textContent = sliders.R1.value; updateResults(); });
+sliders.R2.addEventListener('input', () => { params.R2 = parseFloat(sliders.R2.value); vals.R2.textContent = sliders.R2.value; updateResults(); });
+sliders.V0.addEventListener('input', () => { params.V0 = parseFloat(sliders.V0.value); vals.V0.textContent = sliders.V0.value; updateResults(); });
+sliders.freq.addEventListener('input', () => {
+  params.freq = parseFloat(sliders.freq.value);
+  vals.freq.textContent = sliders.freq.value;
+  updateResults();
+});
+
+// ─────────────────────────────────────────
+//  PHYSICS CALCULATIONS
+// ─────────────────────────────────────────
+function calcPhysics() {
+  const { L1, L2, M, R1, R2, V0, freq } = params;
+  const omega = 2 * Math.PI * freq;
+  const XL1 = omega * L1;
+  const XL2 = omega * L2;
+  const XM  = omega * M;
+  const k   = M / Math.sqrt(L1 * L2);
+
+  // Impedance Z1 (with reflected impedance from secondary)
+  // Z2 = R2 + jXL2
+  // Zrefl = (XM)^2 / Z2
+  const Z2_r = R2;
+  const Z2_i = XL2;
+  const Z2_sq = Z2_r*Z2_r + Z2_i*Z2_i;
+  const Zrefl_r = XM*XM * Z2_r / Z2_sq;
+  const Zrefl_i = -XM*XM * Z2_i / Z2_sq;
+
+  const Z1_r = R1 + Zrefl_r;
+  const Z1_i = XL1 + Zrefl_i;
+  const Z1_mag = Math.sqrt(Z1_r*Z1_r + Z1_i*Z1_i);
+
+  const I1_peak = V0 / Z1_mag;
+  const EMF2 = XM * I1_peak;
+  const Z2_mag = Math.sqrt(Z2_r*Z2_r + Z2_i*Z2_i);
+  const I2_peak = EMF2 / Z2_mag;
+
+  const W1 = 0.5 * L1 * I1_peak * I1_peak * 1000; // mJ
+  const W2 = 0.5 * L2 * I2_peak * I2_peak * 1000;
+  const Wm = M * I1_peak * I2_peak * 1000;
+  const Wtotal = W1 + W2 + Wm;
+
+  return { omega, XL1, XL2, XM, k, Z1_mag, I1_peak, I2_peak, EMF2, W1, W2, Wm, Wtotal };
+}
+
+function fmt(n, d=3) {
+  if (isNaN(n)) return '—';
+  if (Math.abs(n) < 0.001) return n.toExponential(2);
+  return n.toFixed(d);
+}
+
+function updateResults() {
+  const p = calcPhysics();
+  const k = p.k;
+
+  document.getElementById('res-emf').textContent = fmt(p.EMF2, 3) + ' V';
+  document.getElementById('res-Z1').textContent  = fmt(p.Z1_mag, 2) + ' Ω';
+  document.getElementById('res-I1').textContent  = fmt(p.I1_peak, 3) + ' A';
+  document.getElementById('res-I2').textContent  = fmt(p.I2_peak, 3) + ' A';
+  document.getElementById('res-W').textContent   = fmt(p.Wtotal, 3) + ' mJ';
+  document.getElementById('res-wM').textContent  = fmt(p.XM, 2) + ' Ω';
+
+  document.getElementById('val-k').textContent = k.toFixed(3);
+  document.getElementById('k-bar').style.width = (k * 100).toFixed(1) + '%';
+
+  // Energy bars
+  const Wmax = Math.max(p.W1, p.W2, Math.abs(p.Wm), 0.001);
+  document.getElementById('eb-L1').style.width = (p.W1/Wmax*100).toFixed(1)+'%';
+  document.getElementById('eb-L2').style.width = (p.W2/Wmax*100).toFixed(1)+'%';
+  document.getElementById('eb-M').style.width  = (Math.abs(p.Wm)/Wmax*100).toFixed(1)+'%';
+  document.getElementById('ev-L1').textContent = fmt(p.W1,2)+' mJ';
+  document.getElementById('ev-L2').textContent = fmt(p.W2,2)+' mJ';
+  document.getElementById('ev-M').textContent  = fmt(p.Wm,2)+' mJ';
+}
+
+// ─────────────────────────────────────────
+//  WAVEFORM DATA
+// ─────────────────────────────────────────
+function getWaveAt(t) {
+  const { L1, L2, M, R1, R2, V0, freq } = params;
+  const omega = 2 * Math.PI * freq;
+  const XL1 = omega * L1, XL2 = omega * L2, XM = omega * M;
+  const Z2_r = R2, Z2_i = XL2, Z2_sq = Z2_r*Z2_r + Z2_i*Z2_i;
+  const Zrefl_r = XM*XM * Z2_r / Z2_sq;
+  const Zrefl_i = -XM*XM * Z2_i / Z2_sq;
+  const Z1_r = R1 + Zrefl_r, Z1_i = XL1 + Zrefl_i;
+  const Z1_mag = Math.sqrt(Z1_r*Z1_r + Z1_i*Z1_i);
+  const phi1 = Math.atan2(Z1_i, Z1_r);
+  const Z2_mag = Math.sqrt(Z2_sq);
+  const phi2_angle = Math.atan2(Z2_i, Z2_r);
+
+  const I1p = V0 / Z1_mag;
+  const EMF2 = XM * I1p;
+  const I2p = EMF2 / Z2_mag;
+
+  const v1  = V0 * Math.sin(omega * t);
+  const i1  = I1p * Math.sin(omega * t - phi1);
+  const v2  = EMF2 * Math.sin(omega * t - phi1 + Math.PI/2);
+  const i2  = I2p * Math.sin(omega * t - phi1 + Math.PI/2 - phi2_angle);
+  const phi_1 = L1 * i1 * 1000; // mWb
+  const phi_2 = M  * i1 * 1000;
+
+  return { v1, i1, v2, i2, phi_1, phi_2 };
+}
+
+// ─────────────────────────────────────────
+//  DRAW CIRCUIT
+// ─────────────────────────────────────────
+function drawCircuit() {
+  const canvas = document.getElementById('circuit-canvas');
+  const W = canvas.offsetWidth, H = 200;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0,0,W,H);
+
+  const { L1, L2, M, freq } = params;
+  const omega = 2 * Math.PI * freq;
+  const p = calcPhysics();
+  const t = simTime;
+  const wv = getWaveAt(t);
+
+  // Colours
+  const C = { blue:'#3B82F6', cyan:'#06B6D4', amber:'#F59E0B', muted:'#4B5563', green:'#10B981', white:'#F0F4FF' };
+
+  // ── LEFT CIRCUIT (primary) ──
+  const lx = 40, rx = W/2 - 30;
+  const ty = 30, by = H - 30;
+  const midY = (ty+by)/2;
+
+  ctx.strokeStyle = C.blue;
+  ctx.lineWidth = 2;
+
+  // top wire
+  ctx.beginPath(); ctx.moveTo(lx, ty); ctx.lineTo(rx, ty); ctx.stroke();
+  // bottom wire
+  ctx.beginPath(); ctx.moveTo(lx, by); ctx.lineTo(rx, by); ctx.stroke();
+
+  // left wire (source side)
+  ctx.beginPath(); ctx.moveTo(lx, ty); ctx.lineTo(lx, by); ctx.stroke();
+
+  // Draw AC source on left
+  const srcY = midY;
+  ctx.beginPath(); ctx.arc(lx, srcY, 18, 0, Math.PI*2); ctx.strokeStyle=C.blue; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle=C.green; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(let i=-15;i<=15;i++){
+    const x2 = lx + i;
+    const y2 = srcY - 8*Math.sin(i/15*Math.PI*2);
+    if(i===-15) ctx.moveTo(x2,y2); else ctx.lineTo(x2,y2);
+  }
+  ctx.stroke();
+
+  // Voltage label
+  ctx.fillStyle = C.green;
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('V₀='+params.V0+'V', lx, srcY+32);
+
+  // Draw R1
+  const r1x = rx - 20;
+  drawResistor(ctx, r1x, ty, C.blue, 'R₁\n'+params.R1+'Ω');
+
+  // Draw L1
+  const l1x = (lx+rx)/2 - 20;
+  drawInductor(ctx, l1x, by, C.blue, 'L₁');
+
+  // right wire primary
+  ctx.strokeStyle = C.blue; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(rx,ty); ctx.lineTo(rx,by); ctx.stroke();
+
+  // Current arrow primary
+  const I1 = wv.i1;
+  drawCurrentArrow(ctx, lx+40, ty, I1, C.blue, 'I₁='+fmt(Math.abs(I1),3)+'A');
+
+  // ── RIGHT CIRCUIT (secondary) ──
+  const lx2 = W/2 + 10, rx2 = W - 40;
+
+  ctx.strokeStyle = C.cyan;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(lx2,ty); ctx.lineTo(rx2,ty); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lx2,by); ctx.lineTo(rx2,by); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx2,ty); ctx.lineTo(rx2,by); ctx.stroke();
+
+  // Draw R2
+  drawResistor(ctx, lx2, ty, C.cyan, 'R₂\n'+params.R2+'Ω');
+
+  // Draw L2
+  drawInductor(ctx, lx2 + (rx2-lx2)/2 - 20, by, C.cyan, 'L₂');
+
+  // Current arrow secondary
+  drawCurrentArrow(ctx, lx2+50, ty, wv.i2, C.cyan, 'I₂='+fmt(Math.abs(wv.i2),3)+'A');
+
+  // GGL label
+  ctx.fillStyle = C.amber;
+  ctx.font = '9px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('ε₂='+fmt(Math.abs(wv.v2),2)+'V', lx2 + (rx2-lx2)/2, ty-8);
+
+  // ── COUPLING ARROW (center) ──
+  const cx = W/2;
+  ctx.strokeStyle = C.amber;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(cx-8, midY-20); ctx.lineTo(cx+8, midY-20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-8, midY);    ctx.lineTo(cx+8, midY);    ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-8, midY+20); ctx.lineTo(cx+8, midY+20); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = C.amber;
+  ctx.font = '11px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('M', cx, midY+38);
+  ctx.font = '9px Inter';
+  ctx.fillStyle = '#6B7280';
+  ctx.fillText('k='+p.k.toFixed(2), cx, midY+52);
+}
+
+function drawResistor(ctx, x, y, color, label) {
+  const w=30, h=12;
+  ctx.strokeStyle = color; ctx.lineWidth=2; ctx.fillStyle='#0A0E1A';
+  ctx.beginPath(); ctx.roundRect(x, y-h/2, w, h, 3); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.font='9px JetBrains Mono'; ctx.textAlign='center';
+  const lines = label.split('\n');
+  lines.forEach((l,i)=> ctx.fillText(l, x+w/2, y - 10 - (lines.length-1-i)*10));
+}
+
+function drawInductor(ctx, x, y, color, label) {
+  ctx.strokeStyle = color; ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<4;i++){
+    ctx.arc(x + i*14 + 7, y, 7, Math.PI, 0, false);
+  }
+  ctx.stroke();
+  ctx.fillStyle = color; ctx.font='9px JetBrains Mono'; ctx.textAlign='center';
+  ctx.fillText(label, x+28, y+18);
+}
+
+function drawCurrentArrow(ctx, x, y, val, color, label) {
+  const dir = val >= 0 ? 1 : -1;
+  ctx.strokeStyle = color; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + 18*dir, y);
+  // arrowhead
+  ctx.lineTo(x+12*dir, y-4); ctx.moveTo(x+18*dir, y); ctx.lineTo(x+12*dir, y+4);
+  ctx.stroke();
+  ctx.fillStyle = color; ctx.font='9px JetBrains Mono'; ctx.textAlign='center';
+  ctx.fillText(label, x+9*dir, y-8);
+}
+
+// ─────────────────────────────────────────
+//  DRAW WAVEFORM
+// ─────────────────────────────────────────
+function drawWaveform() {
+  const canvas = document.getElementById('wave-canvas');
+  const W = canvas.offsetWidth, H = 180;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const pad = { l:40, r:20, t:20, b:30 };
+  const iW = W - pad.l - pad.r;
+  const iH = H - pad.t - pad.b;
+  const midY = pad.t + iH/2;
+
+  // Grid
+  ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){
+    const y = pad.t + i*(iH/4);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+  }
+  for(let i=0;i<=8;i++){
+    const x = pad.l + i*(iW/8);
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,H-pad.b); ctx.stroke();
+  }
+
+  // Zero line
+  ctx.strokeStyle = '#374151'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(pad.l, midY); ctx.lineTo(W-pad.r, midY); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#6B7280'; ctx.font='10px JetBrains Mono'; ctx.textAlign='right';
+  ctx.fillText('t', W-pad.r+14, midY+4);
+  ctx.fillText('0', pad.l-4, midY+4);
+
+  if(waveData.t.length < 2) return;
+
+  const n = waveData.t.length;
+
+  // Find max for scale
+  let maxA = 0, maxB = 0;
+  if(currentTab==='voltage') {
+    waveData.v1.forEach(v=>maxA=Math.max(maxA,Math.abs(v)));
+    waveData.v2.forEach(v=>maxB=Math.max(maxB,Math.abs(v)));
+  } else if(currentTab==='current') {
+    waveData.i1.forEach(v=>maxA=Math.max(maxA,Math.abs(v)));
+    waveData.i2.forEach(v=>maxB=Math.max(maxB,Math.abs(v)));
+  } else {
+    waveData.phi1.forEach(v=>maxA=Math.max(maxA,Math.abs(v)));
+    waveData.phi2.forEach(v=>maxB=Math.max(maxB,Math.abs(v)));
+  }
+  const scale = Math.max(maxA, maxB, 0.001);
+
+  const drawLine = (arr, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    arr.forEach((v, idx) => {
+      const x = pad.l + (idx/(n-1)) * iW;
+      const y = midY - (v/scale) * (iH/2) * 0.9;
+      idx===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  };
+
+  if(currentTab==='voltage') {
+    drawLine(waveData.v1, '#3B82F6');
+    drawLine(waveData.v2, '#06B6D4');
+    // Legend
+    ctx.fillStyle='#3B82F6'; ctx.font='10px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText('V₁(t)', pad.l+4, pad.t+14);
+    ctx.fillStyle='#06B6D4';
+    ctx.fillText('V₂(t)', pad.l+60, pad.t+14);
+    ctx.fillStyle='#6B7280'; ctx.textAlign='right'; ctx.font='9px JetBrains Mono';
+    ctx.fillText(fmt(scale,2)+' V', pad.l-4, pad.t+16);
+  } else if(currentTab==='current') {
+    drawLine(waveData.i1, '#3B82F6');
+    drawLine(waveData.i2, '#06B6D4');
+    ctx.fillStyle='#3B82F6'; ctx.font='10px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText('I₁(t)', pad.l+4, pad.t+14);
+    ctx.fillStyle='#06B6D4';
+    ctx.fillText('I₂(t)', pad.l+60, pad.t+14);
+    ctx.fillStyle='#6B7280'; ctx.textAlign='right'; ctx.font='9px JetBrains Mono';
+    ctx.fillText(fmt(scale,3)+' A', pad.l-4, pad.t+16);
+  } else {
+    drawLine(waveData.phi1, '#F59E0B');
+    drawLine(waveData.phi2, '#10B981');
+    ctx.fillStyle='#F59E0B'; ctx.font='10px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText('Φ₁(t)', pad.l+4, pad.t+14);
+    ctx.fillStyle='#10B981';
+    ctx.fillText('Φₘ(t)', pad.l+62, pad.t+14);
+    ctx.fillStyle='#6B7280'; ctx.textAlign='right'; ctx.font='9px JetBrains Mono';
+    ctx.fillText(fmt(scale,2)+' mWb', pad.l-4, pad.t+16);
+  }
+
+  // Time axis
+  ctx.fillStyle='#6B7280'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center';
+  const T = 1/params.freq;
+  ctx.fillText('0', pad.l, H-pad.b+12);
+  ctx.fillText(fmt(T*500,1)+'ms', pad.l+iW/2, H-pad.b+12);
+  ctx.fillText(fmt(T*1000,1)+'ms', W-pad.r, H-pad.b+12);
+}
+
+// ─────────────────────────────────────────
+//  DRAW PHASOR
+// ─────────────────────────────────────────
+function drawPhasor() {
+  const canvas = document.getElementById('phasor-canvas');
+  const W = canvas.offsetWidth, H = 220;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W, H)/2 - 30;
+
+  // Reference circle
+  ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+
+  // Axes
+  ctx.strokeStyle = '#374151'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx-R-10,cy); ctx.lineTo(cx+R+10,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy-R-10); ctx.lineTo(cx,cy+R+10); ctx.stroke();
+
+  ctx.fillStyle='#6B7280'; ctx.font='10px JetBrains Mono';
+  ctx.textAlign='center';
+  ctx.fillText('Re', cx+R+16, cy+4);
+  ctx.fillText('Im', cx, cy-R-16);
+
+  const p = calcPhysics();
+  const omega = 2 * Math.PI * params.freq;
+  const XL1 = omega * params.L1, XL2 = omega * params.L2, XM = omega * params.M;
+  const Z2_r = params.R2, Z2_i = XL2;
+  const Z2_sq = Z2_r*Z2_r + Z2_i*Z2_i;
+  const Zrefl_r = XM*XM*Z2_r/Z2_sq;
+  const Zrefl_i = -XM*XM*Z2_i/Z2_sq;
+  const Z1_r = params.R1 + Zrefl_r, Z1_i = XL1 + Zrefl_i;
+  const phi1 = Math.atan2(Z1_i, Z1_r);
+  const phi2 = Math.atan2(XL2, params.R2);
+
+  // V1 phasor (reference, angle=0)
+  drawPhasorArrow(ctx, cx, cy, R*0.95, 0, '#3B82F6', 'V₁');
+  // I1 phasor (lags V1 by phi1)
+  drawPhasorArrow(ctx, cx, cy, R*0.75, -phi1, '#60A5FA', 'I₁');
+  // V2/EMF phasor
+  drawPhasorArrow(ctx, cx, cy, R*0.80, Math.PI/2 - phi1, '#06B6D4', 'ε₂');
+  // I2 phasor
+  drawPhasorArrow(ctx, cx, cy, R*0.65, Math.PI/2 - phi1 - phi2, '#34D399', 'I₂');
+
+  // Legend
+  ctx.font = '10px JetBrains Mono';
+  const items = [
+    {color:'#3B82F6', label:'V₁  tegangan sumber'},
+    {color:'#60A5FA', label:'I₁  arus primer'},
+    {color:'#06B6D4', label:'ε₂  GGL induksi'},
+    {color:'#34D399', label:'I₂  arus sekunder'},
+  ];
+  items.forEach((it,i) => {
+    ctx.fillStyle = it.color;
+    ctx.fillRect(12, 12 + i*18, 10, 10);
+    ctx.fillStyle = '#9CA3AF';
+    ctx.textAlign = 'left';
+    ctx.fillText(it.label, 26, 21 + i*18);
+  });
+
+  // Phase angles
+  ctx.fillStyle='#6B7280'; ctx.font='9px JetBrains Mono'; ctx.textAlign='left';
+  ctx.fillText('φ₁ = '+fmt(phi1*180/Math.PI,1)+'°', 12, H-24);
+  ctx.fillText('φ₂ = '+fmt(phi2*180/Math.PI,1)+'°', 12, H-12);
+}
+
+function drawPhasorArrow(ctx, cx, cy, len, angle, color, label) {
+  const ex = cx + len * Math.cos(angle);
+  const ey = cy - len * Math.sin(angle);
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ex,ey); ctx.stroke();
+  // arrowhead
+  const headLen = 10, headAngle = 0.4;
+  const ang = Math.atan2(cy - ey, ex - cx);
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - headLen*Math.cos(ang-headAngle), ey + headLen*Math.sin(ang-headAngle));
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - headLen*Math.cos(ang+headAngle), ey + headLen*Math.sin(ang+headAngle));
+  ctx.stroke();
+  // label
+  ctx.fillStyle = color; ctx.font='bold 11px JetBrains Mono'; ctx.textAlign='center';
+  ctx.fillText(label, ex + 14*Math.cos(angle), ey - 14*Math.sin(angle) + 4);
+}
+
+// ─────────────────────────────────────────
+//  ANIMATION LOOP
+// ─────────────────────────────────────────
+let lastTime = null;
+function loop(ts) {
+  if(playing) {
+    if(lastTime === null) lastTime = ts;
+    const dt = (ts - lastTime) / 1000;
+    lastTime = ts;
+    simTime += dt * speed;
+
+    const T = 1 / params.freq;
+    const wv = getWaveAt(simTime);
+
+    // Push to history
+    waveData.t.push(simTime);
+    waveData.v1.push(wv.v1);
+    waveData.v2.push(wv.v2);
+    waveData.i1.push(wv.i1);
+    waveData.i2.push(wv.i2);
+    waveData.phi1.push(wv.phi_1);
+    waveData.phi2.push(wv.phi_2);
+
+    // Keep only last 2 periods worth
+    const maxPts = HIST;
+    if(waveData.t.length > maxPts) {
+      const trim = waveData.t.length - maxPts;
+      Object.keys(waveData).forEach(k => waveData[k].splice(0, trim));
+    }
+  } else {
+    lastTime = null;
+  }
+
+  drawCircuit();
+  drawWaveform();
+  drawPhasor();
+
+  animFrame = requestAnimationFrame(loop);
+}
+
+// ─────────────────────────────────────────
+//  CONTROLS
+// ─────────────────────────────────────────
+function togglePlay() {
+  playing = !playing;
+  document.getElementById('play-btn').textContent = playing ? '⏸ PAUSE' : '▶ PLAY';
+  document.getElementById('play-btn').classList.toggle('active', playing);
+  if(playing) lastTime = null;
+}
+
+function resetSim() {
+  simTime = 0;
+  Object.keys(waveData).forEach(k => waveData[k] = []);
+}
+
+function setSpeed(s) {
+  speed = s;
+  ['spd1','spd2','spd5'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('spd'+s)?.classList.add('active');
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['voltage','current','flux'][i] === tab);
+  });
+}
+
+// ─────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────
+clampM();
+updateResults();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
